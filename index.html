@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极限2D射击</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            background-color: #000;
+            border: 4px solid #444;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            background-color: #000;
+        }
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        #healthBar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 200px;
+            height: 20px;
+            background-color: #333;
+            border: 2px solid #555;
+        }
+        #healthFill {
+            height: 100%;
+            width: 100%;
+            background-color: #f00;
+            transition: width 0.3s;
+        }
+        #ammoCount {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+        }
+        #scoreDisplay {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+        }
+        #levelDisplay {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+        }
+        #weaponDisplay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 16px;
+            color: #ff0;
+            text-shadow: 0 0 5px #000;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #gameOverText {
+            font-size: 48px;
+            color: #f00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #000;
+        }
+        #finalScore {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        #difficultyUsed {
+            font-size: 20px;
+            color: #ff0;
+            margin-bottom: 20px;
+        }
+        #restartButton {
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #444;
+            color: white;
+            border: 2px solid #666;
+            cursor: pointer;
+            pointer-events: auto;
+            margin-bottom: 10px;
+        }
+        #restartButton:hover {
+            background-color: #555;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #title {
+            font-size: 64px;
+            color: #f00;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #000;
+        }
+        #instructions {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+        #startButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #444;
+            color: white;
+            border: 2px solid #666;
+            cursor: pointer;
+        }
+        #startButton:hover {
+            background-color: #555;
+        }
+        #difficultySelect {
+            margin-bottom: 20px;
+            padding: 5px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+        }
+        .powerup {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
+        #bossHealthBar {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 20px;
+            background-color: #333;
+            border: 2px solid #555;
+            display: none;
+        }
+        #bossHealthFill {
+            height: 100%;
+            width: 100%;
+            background-color: #f0f;
+            transition: width 0.3s;
+        }
+        #autoCollectToggle {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #444;
+            color: white;
+            border: 1px solid #666;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        #autoCollectToggle:hover {
+            background-color: #555;
+        }
+        #weaponSelectScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 101;
+        }
+        #weaponSelectTitle {
+            font-size: 36px;
+            color: #ff0;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px #000;
+        }
+        .weaponOption {
+            width: 300px;
+            padding: 10px;
+            margin: 5px;
+            background-color: #333;
+            border: 2px solid #555;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            justify-content: space-between;
+        }
+        .weaponOption:hover {
+            background-color: #444;
+        }
+        .weaponName {
+            font-weight: bold;
+            color: #ff0;
+        }
+        .weaponStats {
+            font-size: 14px;
+            color: #ccc;
+        }
+        #bulletSelectScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 102;
+        }
+        #bulletSelectTitle {
+            font-size: 36px;
+            color: #ff0;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px #000;
+        }
+        .bulletOption {
+            width: 300px;
+            padding: 10px;
+            margin: 5px;
+            background-color: #333;
+            border: 2px solid #555;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            justify-content: space-between;
+        }
+        .bulletOption:hover {
+            background-color: #444;
+        }
+        .bulletName {
+            font-weight: bold;
+            color: #0ff;
+        }
+        .bulletStats {
+            font-size: 14px;
+            color: #ccc;
+        }
+        #pauseOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 103;
+            pointer-events: none;
+        }
+        #pauseText {
+            font-size: 48px;
+            color: #ff0;
+            text-shadow: 0 0 10px #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="uiOverlay">
+            <div id="healthBar">
+                <div id="healthFill"></div>
+            </div>
+            <div id="ammoCount">弹药: ∞</div>
+            <div id="scoreDisplay">分数: 0</div>
+            <div id="levelDisplay">关卡: 1</div>
+            <div id="weaponDisplay">武器: 基础手枪</div>
+            <div id="bossHealthBar">
+                <div id="bossHealthFill"></div>
+            </div>
+            <button id="autoCollectToggle">自动吸取: 关</button>
+        </div>
+        <div id="gameOverScreen">
+            <div id="gameOverText">游戏结束</div>
+            <div id="finalScore">最终分数: 0</div>
+            <div id="difficultyUsed">难度: 普通</div>
+            <button id="restartButton">重新开始</button>
+            <select id="difficultySelectEnd">
+                <option value="normal">普通难度</option>
+                <option value="hard">困难难度</option>
+                <option value="insane">疯狂难度</option>
+            </select>
+        </div>
+        <div id="startScreen">
+            <div id="title">极限2D射击</div>
+            <div id="instructions">
+                使用WASD移动，鼠标瞄准并射击<br>
+                击败敌人获得分数和升级<br>
+                每5关会遇到强大的BOSS<br>
+                收集能量提升武器和能力<br>
+                生存越久，敌人越强！
+            </div>
+            <select id="difficultySelect">
+                <option value="normal">普通难度</option>
+                <option value="hard">困难难度</option>
+                <option value="insane">疯狂难度</option>
+            </select>
+            <button id="startButton">开始游戏</button>
+        </div>
+        <div id="weaponSelectScreen">
+            <div id="weaponSelectTitle">选择武器升级</div>
+            <div id="weaponOptions"></div>
+        </div>
+        <div id="bulletSelectScreen">
+            <div id="bulletSelectTitle">选择子弹类型</div>
+            <div id="bulletOptions"></div>
+        </div>
+        <div id="pauseOverlay">
+            <div id="pauseText">游戏暂停</div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            running: false,
+            difficulty: 'normal',
+            score: 0,
+            level: 1,
+            gameTime: 0,
+            player: null,
+            enemies: [],
+            bullets: [],
+            powerups: [],
+            explosions: [],
+            lastEnemySpawn: 0,
+            enemySpawnInterval: 1500,
+            lastBossSpawn: 0,
+            bossActive: false,
+            boss: null,
+            waveEnemies: 0,
+            waveEnemiesKilled: 0,
+            autoCollect: false,
+            collectRadius: 300,
+            collectSpeed: 5,
+            weaponUpgrades: [],
+            bulletTypes: [],
+            paused: false, // 新增暂停状态
+            timeBeforePause: 0 // 新增暂停前的时间
+        };
+
+        // 难度设置
+        const difficultySettings = {
+            normal: {
+                enemyHealth: 1.2,
+                enemySpeed: 1.2,
+                spawnRate: 1.5,
+                damage: 1.2
+            },
+            hard: {
+                enemyHealth: 1.8,
+                enemySpeed: 1.5,
+                spawnRate: 2,
+                damage: 1.8
+            },
+            insane: {
+                enemyHealth: 2.5,
+                enemySpeed: 2,
+                spawnRate: 3,
+                damage: 2.5
+            }
+        };
+
+        // 玩家设置
+        const playerSettings = {
+            width: 30,
+            height: 30,
+            speed: 5,
+            maxHealth: 150,
+            invulnerabilityTime: 1000
+        };
+
+        // 武器设置 - 12种武器
+        const weapons = {
+            pistol: {
+                name: "基础手枪",
+                damage: 10,
+                fireRate: 500,
+                bulletSpeed: 10,
+                ammo: Infinity,
+                spread: 0,
+                bullets: 1,
+                color: "#fff",
+                description: "基础武器，平衡性能"
+            },
+            machinegun: {
+                name: "机枪",
+                damage: 7,
+                fireRate: 80,
+                bulletSpeed: 12,
+                ammo: 300,
+                spread: 0.1,
+                bullets: 1,
+                color: "#0ff",
+                description: "高射速，适合近距离"
+            },
+            shotgun: {
+                name: "霰弹枪",
+                damage: 6,
+                fireRate: 700,
+                bulletSpeed: 8,
+                ammo: 80,
+                spread: 0.3,
+                bullets: 7,
+                color: "#ff0",
+                description: "多发子弹，范围伤害"
+            },
+            laser: {
+                name: "激光枪",
+                damage: 25,
+                fireRate: 200,
+                bulletSpeed: 20,
+                ammo: 150,
+                spread: 0,
+                bullets: 1,
+                color: "#f0f",
+                description: "高伤害，精准射击"
+            },
+            rocket: {
+                name: "火箭筒",
+                damage: 60,
+                fireRate: 1200,
+                bulletSpeed: 6,
+                ammo: 30,
+                spread: 0,
+                bullets: 1,
+                explosionRadius: 80,
+                color: "#f80",
+                description: "爆炸伤害，范围效果"
+            },
+            minigun: {
+                name: "迷你枪",
+                damage: 5,
+                fireRate: 50,
+                bulletSpeed: 15,
+                ammo: 500,
+                spread: 0.2,
+                bullets: 1,
+                color: "#8ff",
+                description: "超高射速，弹药充足"
+            },
+            sniper: {
+                name: "狙击枪",
+                damage: 40,
+                fireRate: 1000,
+                bulletSpeed: 30,
+                ammo: 20,
+                spread: 0,
+                bullets: 1,
+                color: "#0f8",
+                description: "超高伤害，精准打击"
+            },
+            flamethrower: {
+                name: "火焰喷射器",
+                damage: 15,
+                fireRate: 30,
+                bulletSpeed: 8,
+                ammo: 200,
+                spread: 0.4,
+                bullets: 3,
+                color: "#f84",
+                description: "持续伤害，范围攻击"
+            },
+            plasma: {
+                name: "等离子枪",
+                damage: 35,
+                fireRate: 150,
+                bulletSpeed: 10,
+                ammo: 100,
+                spread: 0,
+                bullets: 1,
+                explosionRadius: 40,
+                color: "#4f8",
+                description: "爆炸子弹，中等射速"
+            },
+            railgun: {
+                name: "轨道炮",
+                damage: 50,
+                fireRate: 800,
+                bulletSpeed: 25,
+                ammo: 40,
+                spread: 0,
+                bullets: 1,
+                penetration: 3,
+                color: "#8f8",
+                description: "穿透敌人，高伤害"
+            },
+            grenade: {
+                name: "榴弹发射器",
+                damage: 45,
+                fireRate: 900,
+                bulletSpeed: 7,
+                ammo: 25,
+                spread: 0,
+                bullets: 1,
+                explosionRadius: 70,
+                color: "#f88",
+                description: "大范围爆炸伤害"
+            },
+            tesla: {
+                name: "特斯拉枪",
+                damage: 20,
+                fireRate: 250,
+                bulletSpeed: 12,
+                ammo: 120,
+                spread: 0,
+                bullets: 1,
+                chainLightning: 3,
+                color: "#88f",
+                description: "连锁闪电，群体伤害"
+            }
+        };
+
+        // 子弹类型设置
+        const bulletTypes = [
+            {
+                name: "标准子弹",
+                damageMultiplier: 1,
+                speedMultiplier: 1,
+                sizeMultiplier: 1,
+                color: null,
+                description: "基础子弹类型"
+            },
+            {
+                name: "穿甲弹",
+                damageMultiplier: 1.2,
+                speedMultiplier: 1,
+                sizeMultiplier: 1,
+                color: "#fff",
+                penetration: 2,
+                description: "穿透敌人，伤害+20%"
+            },
+            {
+                name: "燃烧弹",
+                damageMultiplier: 1.3,
+                speedMultiplier: 0.9,
+                sizeMultiplier: 1.2,
+                color: "#f80",
+                burnDamage: 5,
+                description: "造成持续燃烧伤害，伤害+30%"
+            },
+            {
+                name: "冰冻弹",
+                damageMultiplier: 0.8,
+                speedMultiplier: 1.2,
+                sizeMultiplier: 1,
+                color: "#0ff",
+                slowEffect: 0.5,
+                description: "减慢敌人速度，伤害-20%"
+            },
+            {
+                name: "爆炸弹",
+                damageMultiplier: 1.5,
+                speedMultiplier: 0.8,
+                sizeMultiplier: 1.5,
+                color: "#f00",
+                explosionRadius: 30,
+                description: "小范围爆炸，伤害+50%"
+            }
+        ];
+
+        // 敌人类型
+        const enemyTypes = [
+            {
+                name: "普通敌人",
+                width: 25,
+                height: 25,
+                speed: 1.8,
+                health: 1.5,
+                color: "#f00",
+                score: 15,
+                powerupChance: 0.15
+            },
+            {
+                name: "快速敌人",
+                width: 20,
+                height: 20,
+                speed: 3.5,
+                health: 1.2,
+                color: "#0f0",
+                score: 20,
+                powerupChance: 0.2
+            },
+            {
+                name: "重型敌人",
+                width: 40,
+                height: 40,
+                speed: 1.2,
+                health: 5,
+                color: "#00f",
+                score: 40,
+                powerupChance: 0.3
+            },
+            {
+                name: "狙击敌人",
+                width: 25,
+                height: 25,
+                speed: 1.5,
+                health: 1.5,
+                color: "#ff0",
+                score: 35,
+                powerupChance: 0.3,
+                canShoot: true,
+                shootInterval: 1500,
+                bulletSpeed: 10,
+                bulletDamage: 20
+            },
+            {
+                name: "爆炸敌人",
+                width: 30,
+                height: 30,
+                speed: 1.3,
+                health: 2,
+                color: "#f80",
+                score: 30,
+                powerupChance: 0.25,
+                explosionOnDeath: true,
+                explosionDamage: 30,
+                explosionRadius: 60
+            },
+            {
+                name: "分裂敌人",
+                width: 28,
+                height: 28,
+                speed: 1.7,
+                health: 2.5,
+                color: "#f0f",
+                score: 35,
+                powerupChance: 0.35,
+                splitOnDeath: true,
+                splitCount: 3
+            },
+            {
+                name: "精英敌人",
+                width: 35,
+                height: 35,
+                speed: 2,
+                health: 8,
+                color: "#0ff",
+                score: 60,
+                powerupChance: 0.4,
+                canShoot: true,
+                shootInterval: 1000,
+                bulletSpeed: 8,
+                bulletDamage: 15,
+                bulletCount: 3
+            }
+        ];
+
+        // BOSS设置
+        const bossSettings = {
+            width: 120,
+            height: 120,
+            speed: 2,
+            health: 80,
+            color: "#f0f",
+            score: 800,
+            shootInterval: 800,
+            bulletSpeed: 8,
+            bulletDamage: 25,
+            bulletCount: 12,
+            patternChangeInterval: 4000
+        };
+
+        // 能量提升
+        const powerupTypes = [
+            {
+                type: "health",
+                color: "#0f0",
+                value: 35,
+                chance: 0.35
+            },
+            {
+                type: "ammo",
+                color: "#0ff",
+                value: 80,
+                chance: 0.35
+            },
+            {
+                type: "weapon",
+                color: "#ff0",
+                value: null,
+                chance: 0.3,
+                weapons: ["machinegun", "shotgun", "laser", "rocket", "minigun", "sniper", "flamethrower", "plasma", "railgun", "grenade", "tesla"]
+            }
+        ];
+
+        // 获取DOM元素
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const healthFill = document.getElementById('healthFill');
+        const ammoCount = document.getElementById('ammoCount');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const levelDisplay = document.getElementById('levelDisplay');
+        const weaponDisplay = document.getElementById('weaponDisplay');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameOverText = document.getElementById('gameOverText');
+        const finalScore = document.getElementById('finalScore');
+        const difficultyUsed = document.getElementById('difficultyUsed');
+        const restartButton = document.getElementById('restartButton');
+        const difficultySelectEnd = document.getElementById('difficultySelectEnd');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const difficultySelect = document.getElementById('difficultySelect');
+        const bossHealthBar = document.getElementById('bossHealthBar');
+        const bossHealthFill = document.getElementById('bossHealthFill');
+        const autoCollectToggle = document.getElementById('autoCollectToggle');
+        const weaponSelectScreen = document.getElementById('weaponSelectScreen');
+        const weaponSelectTitle = document.getElementById('weaponSelectTitle');
+        const weaponOptions = document.getElementById('weaponOptions');
+        const bulletSelectScreen = document.getElementById('bulletSelectScreen');
+        const bulletSelectTitle = document.getElementById('bulletSelectTitle');
+        const bulletOptions = document.getElementById('bulletOptions');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const pauseText = document.getElementById('pauseText');
+
+        // 玩家类
+        class Player {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.width = playerSettings.width;
+                this.height = playerSettings.height;
+                this.speed = playerSettings.speed;
+                this.health = playerSettings.maxHealth;
+                this.maxHealth = playerSettings.maxHealth;
+                this.weapon = weapons.pistol;
+                this.bulletType = bulletTypes[0];
+                this.lastShot = 0;
+                this.invulnerable = false;
+                this.invulnerableTime = 0;
+                this.direction = { x: 0, y: -1 };
+                this.keys = {
+                    w: false,
+                    a: false,
+                    s: false,
+                    d: false
+                };
+                this.weaponUpgrades = [];
+            }
+
+            update(deltaTime) {
+                // 移动
+                const moveX = (this.keys.d ? 1 : 0) + (this.keys.a ? -1 : 0);
+                const moveY = (this.keys.s ? 1 : 0) + (this.keys.w ? -1 : 0);
+                
+                const moveLength = Math.sqrt(moveX * moveX + moveY * moveY);
+                if (moveLength > 0) {
+                    this.x += (moveX / moveLength) * this.speed;
+                    this.y += (moveY / moveLength) * this.speed;
+                }
+                
+                // 边界检查
+                this.x = Math.max(this.width / 2, Math.min(canvas.width - this.width / 2, this.x));
+                this.y = Math.max(this.height / 2, Math.min(canvas.height - this.height / 2, this.y));
+                
+                // 更新无敌时间
+                if (this.invulnerable) {
+                    this.invulnerableTime += deltaTime;
+                    if (this.invulnerableTime >= playerSettings.invulnerabilityTime) {
+                        this.invulnerable = false;
+                        this.invulnerableTime = 0;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                ctx.fillStyle = this.invulnerable ? 'rgba(255, 255, 255, 0.5)' : '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#f00';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.direction.x * 20, this.y + this.direction.y * 20);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+
+            takeDamage(amount) {
+                if (!this.invulnerable) {
+                    this.health -= amount * difficultySettings[gameState.difficulty].damage;
+                    this.invulnerable = true;
+                    
+                    if (this.health <= 0) {
+                        this.health = 0;
+                        gameOver();
+                    }
+                    
+                    updateHealthBar();
+                }
+            }
+
+            shoot(targetX, targetY) {
+                if (gameState.paused) return; // 暂停时不射击
+                
+                const now = Date.now();
+                if (now - this.lastShot < this.weapon.fireRate) return;
+                
+                if (this.weapon.ammo <= 0 && this.weapon.ammo !== Infinity) {
+                    this.weapon = weapons.pistol;
+                    updateWeaponDisplay();
+                    return;
+                }
+                
+                this.lastShot = now;
+                
+                // 更新方向
+                const dx = targetX - this.x;
+                const dy = targetY - this.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                this.direction = {
+                    x: dx / length,
+                    y: dy / length
+                };
+                
+                // 发射子弹
+                for (let i = 0; i < this.weapon.bullets; i++) {
+                    const angle = Math.atan2(dy, dx);
+                    const spread = this.weapon.spread * (Math.random() - 0.5);
+                    const bulletAngle = angle + spread;
+                    
+                    const bulletColor = this.bulletType.color || this.weapon.color;
+                    const bulletDamage = this.weapon.damage * this.bulletType.damageMultiplier;
+                    const bulletSpeed = this.weapon.bulletSpeed * this.bulletType.speedMultiplier;
+                    const bulletRadius = 5 * this.bulletType.sizeMultiplier;
+                    
+                    const bullet = {
+                        x: this.x,
+                        y: this.y,
+                        speed: bulletSpeed,
+                        dx: Math.cos(bulletAngle),
+                        dy: Math.sin(bulletAngle),
+                        damage: bulletDamage,
+                        color: bulletColor,
+                        radius: bulletRadius,
+                        explosionRadius: this.weapon.explosionRadius,
+                        penetration: this.bulletType.penetration || 0,
+                        burnDamage: this.bulletType.burnDamage || 0,
+                        slowEffect: this.bulletType.slowEffect || 1,
+                        chainLightning: this.bulletType.chainLightning || 0
+                    };
+                    
+                    gameState.bullets.push(bullet);
+                }
+                
+                // 减少弹药
+                if (this.weapon.ammo !== Infinity) {
+                    this.weapon.ammo--;
+                    updateAmmoDisplay();
+                }
+            }
+        }
+
+        // 敌人类
+        class Enemy {
+            constructor(type) {
+                this.type = type;
+                this.width = type.width;
+                this.height = type.height;
+                this.health = type.health * difficultySettings[gameState.difficulty].enemyHealth;
+                this.maxHealth = this.health;
+                this.color = type.color;
+                this.score = type.score;
+                this.powerupChance = type.powerupChance;
+                
+                // 随机生成位置（在屏幕外）
+                const side = Math.floor(Math.random() * 4);
+                switch (side) {
+                    case 0: // 上
+                        this.x = Math.random() * canvas.width;
+                        this.y = -this.height / 2;
+                        break;
+                    case 1: // 右
+                        this.x = canvas.width + this.width / 2;
+                        this.y = Math.random() * canvas.height;
+                        break;
+                    case 2: // 下
+                        this.x = Math.random() * canvas.width;
+                        this.y = canvas.height + this.height / 2;
+                        break;
+                    case 3: // 左
+                        this.x = -this.width / 2;
+                        this.y = Math.random() * canvas.height;
+                        break;
+                }
+                
+                this.speed = type.speed * difficultySettings[gameState.difficulty].enemySpeed;
+                
+                // 射击相关属性
+                if (type.canShoot) {
+                    this.canShoot = true;
+                    this.shootInterval = type.shootInterval;
+                    this.lastShot = 0;
+                    this.bulletSpeed = type.bulletSpeed;
+                    this.bulletDamage = type.bulletDamage;
+                    this.bulletCount = type.bulletCount || 1;
+                } else {
+                    this.canShoot = false;
+                }
+                
+                // 爆炸相关属性
+                if (type.explosionOnDeath) {
+                    this.explosionOnDeath = true;
+                    this.explosionDamage = type.explosionDamage;
+                    this.explosionRadius = type.explosionRadius;
+                }
+                
+                // 分裂相关属性
+                if (type.splitOnDeath) {
+                    this.splitOnDeath = true;
+                    this.splitCount = type.splitCount;
+                }
+                
+                // 状态效果
+                this.burning = false;
+                this.burnDamage = 0;
+                this.burnTime = 0;
+                this.slowEffect = 1;
+            }
+
+            update(deltaTime) {
+                if (gameState.paused) return; // 暂停时不更新
+                
+                // 应用减速效果
+                const effectiveSpeed = this.speed * this.slowEffect;
+                
+                // 移动向玩家
+                const dx = gameState.player.x - this.x;
+                const dy = gameState.player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0) {
+                    this.x += (dx / distance) * effectiveSpeed;
+                    this.y += (dy / distance) * effectiveSpeed;
+                }
+                
+                // 燃烧效果
+                if (this.burning) {
+                    this.burnTime -= deltaTime;
+                    if (this.burnTime <= 0) {
+                        this.burning = false;
+                    } else if (Math.random() < 0.1) {
+                        this.takeDamage(this.burnDamage);
+                    }
+                }
+                
+                // 射击逻辑
+                if (this.canShoot) {
+                    this.lastShot += deltaTime;
+                    if (this.lastShot >= this.shootInterval) {
+                        this.shoot();
+                        this.lastShot = 0;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                ctx.fillStyle = this.color;
+                if (this.burning) {
+                    ctx.fillStyle = '#f80';
+                }
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制血条
+                if (this.health < this.maxHealth) {
+                    const healthWidth = 40;
+                    const healthHeight = 6;
+                    const healthX = this.x - healthWidth / 2;
+                    const healthY = this.y - this.height / 2 - 15;
+                    
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(healthX, healthY, healthWidth, healthHeight);
+                    
+                    ctx.fillStyle = '#0f0';
+                    ctx.fillRect(healthX, healthY, healthWidth * (this.health / this.maxHealth), healthHeight);
+                }
+                
+                ctx.restore();
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                
+                if (this.health <= 0) {
+                    this.destroy();
+                    return true;
+                }
+                
+                return false;
+            }
+
+            destroy() {
+                gameState.score += this.score;
+                updateScoreDisplay();
+                
+                gameState.waveEnemiesKilled++;
+                
+                if (Math.random() < this.powerupChance) {
+                    spawnPowerup(this.x, this.y);
+                }
+                
+                if (this.explosionOnDeath) {
+                    createExplosion(this.x, this.y, this.explosionRadius, false, this.color);
+                    
+                    const dx = gameState.player.x - this.x;
+                    const dy = gameState.player.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.explosionRadius + gameState.player.width / 2) {
+                        gameState.player.takeDamage(this.explosionDamage * (1 - distance / this.explosionRadius));
+                    }
+                }
+                
+                if (this.splitOnDeath) {
+                    for (let i = 0; i < this.splitCount; i++) {
+                        const smallEnemy = {
+                            name: "小型敌人",
+                            width: this.width * 0.6,
+                            height: this.height * 0.6,
+                            speed: this.speed * 1.5,
+                            health: 1,
+                            color: this.color,
+                            score: this.score / 2,
+                            powerupChance: 0.1
+                        };
+                        
+                        const angle = (Math.PI * 2 / this.splitCount) * i;
+                        const spawnX = this.x + Math.cos(angle) * 20;
+                        const spawnY = this.y + Math.sin(angle) * 20;
+                        
+                        const enemy = new Enemy(smallEnemy);
+                        enemy.x = spawnX;
+                        enemy.y = spawnY;
+                        gameState.enemies.push(enemy);
+                        gameState.waveEnemies++;
+                    }
+                }
+                
+                createExplosion(this.x, this.y, this.width / 2);
+                
+                const index = gameState.enemies.indexOf(this);
+                if (index !== -1) {
+                    gameState.enemies.splice(index, 1);
+                }
+            }
+
+            shoot() {
+                for (let i = 0; i < this.bulletCount; i++) {
+                    const angle = Math.atan2(gameState.player.y - this.y, gameState.player.x - this.x);
+                    const spread = this.bulletCount > 1 ? (i - (this.bulletCount - 1) / 2) * 0.2 : 0;
+                    const bulletAngle = angle + spread;
+                    
+                    const bullet = {
+                        x: this.x,
+                        y: this.y,
+                        speed: this.bulletSpeed,
+                        dx: Math.cos(bulletAngle),
+                        dy: Math.sin(bulletAngle),
+                        damage: this.bulletDamage,
+                        color: this.color,
+                        radius: 4,
+                        isEnemy: true
+                    };
+                    
+                    gameState.bullets.push(bullet);
+                }
+            }
+        }
+
+        // BOSS类
+        class Boss {
+            constructor() {
+                this.width = bossSettings.width;
+                this.height = bossSettings.height;
+                this.health = bossSettings.health * difficultySettings[gameState.difficulty].enemyHealth;
+                this.maxHealth = this.health;
+                this.color = bossSettings.color;
+                this.score = bossSettings.score;
+                this.speed = bossSettings.speed;
+                this.x = canvas.width / 2;
+                this.y = -this.height / 2;
+                this.lastShot = 0;
+                this.shootInterval = bossSettings.shootInterval;
+                this.bulletSpeed = bossSettings.bulletSpeed;
+                this.bulletDamage = bossSettings.bulletDamage;
+                this.bulletCount = bossSettings.bulletCount;
+                this.patternChangeInterval = bossSettings.patternChangeInterval;
+                this.lastPatternChange = 0;
+                this.currentPattern = 0;
+                this.patterns = [
+                    { dx: 1, dy: 0 },
+                    { dx: 0, dy: 1 },
+                    { dx: -1, dy: 0 },
+                    { dx: 0, dy: -1 }
+                ];
+                this.currentDirection = { dx: 0, dy: 1 };
+            }
+
+            update(deltaTime) {
+                if (gameState.paused) return; // 暂停时不更新
+                
+                if (this.y < bossSettings.height / 2 + 50) {
+                    this.y += 2;
+                    return;
+                }
+                
+                this.lastShot += deltaTime;
+                
+                if (this.lastShot >= this.shootInterval) {
+                    this.shoot();
+                    this.lastShot = 0;
+                }
+                
+                this.lastPatternChange += deltaTime;
+                if (this.lastPatternChange >= this.patternChangeInterval) {
+                    this.currentPattern = (this.currentPattern + 1) % this.patterns.length;
+                    this.currentDirection = this.patterns[this.currentPattern];
+                    this.lastPatternChange = 0;
+                }
+                
+                this.x += this.currentDirection.dx * this.speed;
+                this.y += this.currentDirection.dy * this.speed;
+                
+                const padding = 100;
+                if (this.x < padding) {
+                    this.x = padding;
+                    this.currentDirection.dx *= -1;
+                }
+                if (this.x > canvas.width - padding) {
+                    this.x = canvas.width - padding;
+                    this.currentDirection.dx *= -1;
+                }
+                if (this.y < padding) {
+                    this.y = padding;
+                    this.currentDirection.dy *= -1;
+                }
+                if (this.y > canvas.height - padding) {
+                    this.y = canvas.height - padding;
+                    this.currentDirection.dy *= -1;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x - 20, this.y - 15, 10, 0, Math.PI * 2);
+                ctx.arc(this.x + 20, this.y - 15, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y + 15, 20, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                updateBossHealthBar();
+                
+                if (this.health <= 0) {
+                    this.destroy();
+                    return true;
+                }
+                
+                return false;
+            }
+
+            destroy() {
+                gameState.score += this.score;
+                updateScoreDisplay();
+                
+                createExplosion(this.x, this.y, this.width, true);
+                
+                for (let i = 0; i < 8; i++) {
+                    spawnPowerup(this.x, this.y);
+                }
+                
+                gameState.boss = null;
+                gameState.bossActive = false;
+                bossHealthBar.style.display = 'none';
+                
+                nextLevel();
+            }
+
+            shoot() {
+                for (let i = 0; i < this.bulletCount; i++) {
+                    const angle = (Math.PI * 2 / this.bulletCount) * i + (this.lastShot / 200) % (Math.PI * 2);
+                    const bullet = {
+                        x: this.x,
+                        y: this.y,
+                        speed: this.bulletSpeed,
+                        dx: Math.cos(angle),
+                        dy: Math.sin(angle),
+                        damage: this.bulletDamage,
+                        color: this.color,
+                        radius: 8,
+                        isEnemy: true
+                    };
+                    
+                    gameState.bullets.push(bullet);
+                }
+            }
+        }
+
+        // 能量类
+        class Powerup {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 20;
+                this.color = type.color;
+                this.value = type.value;
+                this.lifetime = 10000;
+                this.createdAt = Date.now();
+            }
+
+            update() {
+                if (gameState.paused) return; // 暂停时不更新
+                
+                if (Date.now() - this.createdAt > this.lifetime) {
+                    const index = gameState.powerups.indexOf(this);
+                    if (index !== -1) {
+                        gameState.powerups.splice(index, 1);
+                    }
+                    return;
+                }
+                
+                const dx = this.x - gameState.player.x;
+                const dy = this.y - gameState.player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < (this.width + gameState.player.width) / 2) {
+                    this.collect();
+                    return;
+                }
+                
+                if (gameState.autoCollect && distance < gameState.collectRadius) {
+                    const angle = Math.atan2(gameState.player.y - this.y, gameState.player.x - this.x);
+                    const speed = gameState.collectSpeed * (1 - distance / gameState.collectRadius);
+                    
+                    this.x += Math.cos(angle) * speed;
+                    this.y += Math.sin(angle) * speed;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const timeLeft = this.lifetime - (Date.now() - this.createdAt);
+                if (timeLeft < 2000) {
+                    const alpha = (timeLeft % 500) / 500;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.width / 2 + 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+
+            collect() {
+                switch (this.type.type) {
+                    case "health":
+                        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + this.value);
+                        updateHealthBar();
+                        break;
+                    case "ammo":
+                        if (gameState.player.weapon.ammo !== Infinity) {
+                            gameState.player.weapon.ammo += this.value;
+                            updateAmmoDisplay();
+                        }
+                        break;
+                    case "weapon":
+                        pauseGame(); // 暂停游戏
+                        showWeaponSelect(this.x, this.y);
+                        return; // 不立即移除，等待选择
+                }
+                
+                const index = gameState.powerups.indexOf(this);
+                if (index !== -1) {
+                    gameState.powerups.splice(index, 1);
+                }
+                
+                createExplosion(this.x, this.y, 15, false, this.color);
+            }
+        }
+
+        // 创建爆炸效果
+        function createExplosion(x, y, radius, isLarge = false, color = '#f80') {
+            const particleCount = isLarge ? 80 : 30;
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 4;
+                
+                particles.push({
+                    x: x,
+                    y: y,
+                    dx: Math.cos(angle) * speed,
+                    dy: Math.sin(angle) * speed,
+                    radius: 1 + Math.random() * 4,
+                    color: color,
+                    life: 30 + Math.random() * 70,
+                    alpha: 1
+                });
+            }
+            
+            gameState.explosions.push({
+                x: x,
+                y: y,
+                particles: particles,
+                createdAt: Date.now()
+            });
+        }
+
+        // 生成敌人
+        function spawnEnemy() {
+            if (gameState.bossActive || gameState.paused) return;
+            
+            const levelFactor = 1 + (gameState.level - 1) * 0.15;
+            
+            let typeIndex;
+            const rand = Math.random();
+            
+            if (rand < 0.5 - gameState.level * 0.015) {
+                typeIndex = 0;
+            } else if (rand < 0.75 - gameState.level * 0.01) {
+                typeIndex = 1;
+            } else if (rand < 0.9) {
+                typeIndex = 2;
+            } else if (rand < 0.95) {
+                typeIndex = 3;
+            } else if (rand < 0.97) {
+                typeIndex = 4;
+            } else if (rand < 0.99) {
+                typeIndex = 5;
+            } else {
+                typeIndex = 6;
+            }
+            
+            const enemy = new Enemy(enemyTypes[typeIndex]);
+            gameState.enemies.push(enemy);
+            gameState.waveEnemies++;
+            
+            const waveSize = 5 + Math.floor(gameState.level / 2);
+            if (gameState.waveEnemies < waveSize && Math.random() < 0.6) {
+                setTimeout(spawnEnemy, 200);
+            }
+        }
+
+        // 生成能量
+        function spawnPowerup(x, y) {
+            const totalChance = powerupTypes.reduce((sum, type) => sum + type.chance, 0);
+            let random = Math.random() * totalChance;
+            let selectedType = null;
+            
+            for (const type of powerupTypes) {
+                if (random < type.chance) {
+                    selectedType = type;
+                    break;
+                }
+                random -= type.chance;
+            }
+            
+            if (selectedType) {
+                const offsetX = (Math.random() - 0.5) * 60;
+                const offsetY = (Math.random() - 0.5) * 60;
+                const powerup = new Powerup(selectedType, x + offsetX, y + offsetY);
+                gameState.powerups.push(powerup);
+            }
+        }
+
+        // 生成BOSS
+        function spawnBoss() {
+            gameState.boss = new Boss();
+            gameState.bossActive = true;
+            bossHealthBar.style.display = 'block';
+            updateBossHealthBar();
+        }
+
+        // 显示武器选择界面
+        function showWeaponSelect(x, y) {
+            weaponOptions.innerHTML = '';
+            
+            const currentOption = document.createElement('div');
+            currentOption.className = 'weaponOption';
+            currentOption.innerHTML = `
+                <div>
+                    <span class="weaponName">保留当前: ${gameState.player.weapon.name}</span>
+                    <div class="weaponStats">${gameState.player.weapon.description}</div>
+                </div>
+            `;
+            currentOption.addEventListener('click', () => {
+                weaponSelectScreen.style.display = 'none';
+                showBulletSelect(x, y);
+            });
+            weaponOptions.appendChild(currentOption);
+            
+            const availableWeapons = powerupTypes.find(t => t.type === 'weapon').weapons;
+            const randomWeapons = [];
+            
+            while (randomWeapons.length < 3 && randomWeapons.length < availableWeapons.length - 1) {
+                const randomIndex = Math.floor(Math.random() * availableWeapons.length);
+                const weaponName = availableWeapons[randomIndex];
+                
+                if (weaponName !== gameState.player.weapon.name && !randomWeapons.includes(weaponName)) {
+                    randomWeapons.push(weaponName);
+                }
+            }
+            
+            randomWeapons.forEach(weaponName => {
+                const weapon = weapons[weaponName];
+                const option = document.createElement('div');
+                option.className = 'weaponOption';
+                option.innerHTML = `
+                    <div>
+                        <span class="weaponName">${weapon.name}</span>
+                        <div class="weaponStats">${weapon.description}</div>
+                    </div>
+                `;
+                option.addEventListener('click', () => {
+                    gameState.player.weapon = weapon;
+                    updateWeaponDisplay();
+                    updateAmmoDisplay();
+                    weaponSelectScreen.style.display = 'none';
+                    showBulletSelect(x, y);
+                });
+                weaponOptions.appendChild(option);
+            });
+            
+            weaponSelectScreen.style.display = 'flex';
+        }
+
+        // 显示子弹选择界面
+        function showBulletSelect(x, y) {
+            bulletOptions.innerHTML = '';
+            
+            const currentOption = document.createElement('div');
+            currentOption.className = 'bulletOption';
+            currentOption.innerHTML = `
+                <div>
+                    <span class="bulletName">保留当前: ${gameState.player.bulletType.name}</span>
+                    <div class="bulletStats">${gameState.player.bulletType.description}</div>
+                </div>
+            `;
+            currentOption.addEventListener('click', () => {
+                bulletSelectScreen.style.display = 'none';
+                removePowerup(x, y);
+                resumeGame(); // 恢复游戏
+            });
+            bulletOptions.appendChild(currentOption);
+            
+            const availableBullets = [...bulletTypes];
+            const currentIndex = availableBullets.findIndex(b => b.name === gameState.player.bulletType.name);
+            if (currentIndex !== -1) {
+                availableBullets.splice(currentIndex, 1);
+            }
+            
+            const randomBullets = [];
+            while (randomBullets.length < 2 && randomBullets.length < availableBullets.length) {
+                const randomIndex = Math.floor(Math.random() * availableBullets.length);
+                const bulletType = availableBullets[randomIndex];
+                
+                if (!randomBullets.includes(bulletType)) {
+                    randomBullets.push(bulletType);
+                    availableBullets.splice(randomIndex, 1);
+                }
+            }
+            
+            randomBullets.forEach(bulletType => {
+                const option = document.createElement('div');
+                option.className = 'bulletOption';
+                option.innerHTML = `
+                    <div>
+                        <span class="bulletName">${bulletType.name}</span>
+                        <div class="bulletStats">${bulletType.description}</div>
+                    </div>
+                `;
+                option.addEventListener('click', () => {
+                    gameState.player.bulletType = bulletType;
+                    bulletSelectScreen.style.display = 'none';
+                    removePowerup(x, y);
+                    resumeGame(); // 恢复游戏
+                });
+                bulletOptions.appendChild(option);
+            });
+            
+            bulletSelectScreen.style.display = 'flex';
+        }
+
+        // 移除能量
+        function removePowerup(x, y) {
+            let closestPowerup = null;
+            let minDistance = Infinity;
+            
+            for (const powerup of gameState.powerups) {
+                const dx = powerup.x - x;
+                const dy = powerup.y - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < minDistance && powerup.type.type === 'weapon') {
+                    closestPowerup = powerup;
+                    minDistance = distance;
+                }
+            }
+            
+            if (closestPowerup) {
+                const index = gameState.powerups.indexOf(closestPowerup);
+                if (index !== -1) {
+                    gameState.powerups.splice(index, 1);
+                }
+            }
+            
+            createExplosion(x, y, 15, false, '#ff0');
+        }
+
+        // 暂停游戏
+        function pauseGame() {
+            gameState.paused = true;
+            gameState.timeBeforePause = Date.now();
+            pauseOverlay.style.display = 'flex';
+        }
+
+        // 恢复游戏
+        function resumeGame() {
+            gameState.paused = false;
+            // 调整最后时间以补偿暂停时间
+            const pauseDuration = Date.now() - gameState.timeBeforePause;
+            lastTime += pauseDuration;
+            pauseOverlay.style.display = 'none';
+        }
+
+        // 更新UI
+        function updateHealthBar() {
+            const percent = (gameState.player.health / gameState.player.maxHealth) * 100;
+            healthFill.style.width = `${percent}%`;
+        }
+
+        function updateAmmoDisplay() {
+            if (gameState.player.weapon.ammo === Infinity) {
+                ammoCount.textContent = "弹药: ∞";
+            } else {
+                ammoCount.textContent = `弹药: ${gameState.player.weapon.ammo}`;
+            }
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `分数: ${gameState.score}`;
+        }
+
+        function updateLevelDisplay() {
+            levelDisplay.textContent = `关卡: ${gameState.level}`;
+        }
+
+        function updateWeaponDisplay() {
+            weaponDisplay.textContent = `武器: ${gameState.player.weapon.name}`;
+        }
+
+        function updateBossHealthBar() {
+            if (!gameState.boss) return;
+            const percent = (gameState.boss.health / gameState.boss.maxHealth) * 100;
+            bossHealthFill.style.width = `${percent}%`;
+        }
+
+        // 下一关
+        function nextLevel() {
+            gameState.level++;
+            updateLevelDisplay();
+            
+            if (gameState.level % 5 === 0) {
+                setTimeout(spawnBoss, 2000);
+            }
+            
+            gameState.waveEnemies = 0;
+            gameState.waveEnemiesKilled = 0;
+            
+            gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + 30);
+            updateHealthBar();
+        }
+
+        // 游戏结束
+        function gameOver() {
+            gameState.running = false;
+            gameOverText.textContent = "游戏结束";
+            finalScore.textContent = `最终分数: ${gameState.score}`;
+            
+            let difficultyName = "普通";
+            if (gameState.difficulty === "hard") difficultyName = "困难";
+            else if (gameState.difficulty === "insane") difficultyName = "疯狂";
+            difficultyUsed.textContent = `难度: ${difficultyName}`;
+            
+            difficultySelectEnd.value = gameState.difficulty;
+            
+            gameOverScreen.style.display = "flex";
+        }
+
+        // 重置游戏
+        function resetGame() {
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.gameTime = 0;
+            gameState.enemies = [];
+            gameState.bullets = [];
+            gameState.powerups = [];
+            gameState.explosions = [];
+            gameState.lastEnemySpawn = 0;
+            gameState.lastBossSpawn = 0;
+            gameState.bossActive = false;
+            gameState.boss = null;
+            gameState.waveEnemies = 0;
+            gameState.waveEnemiesKilled = 0;
+            gameState.autoCollect = false;
+            gameState.paused = false;
+            
+            gameState.player = new Player();
+            
+            updateHealthBar();
+            updateAmmoDisplay();
+            updateScoreDisplay();
+            updateLevelDisplay();
+            updateWeaponDisplay();
+            
+            bossHealthBar.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            weaponSelectScreen.style.display = 'none';
+            bulletSelectScreen.style.display = 'none';
+            pauseOverlay.style.display = 'none';
+            autoCollectToggle.textContent = "自动吸取: 关";
+        }
+
+        // 开始游戏
+        function startGame() {
+            gameState.difficulty = difficultySelect.value;
+            resetGame();
+            gameState.running = true;
+            startScreen.style.display = 'none';
+            lastTime = Date.now();
+            gameLoop();
+        }
+
+        // 游戏主循环
+        let lastTime = Date.now();
+        function gameLoop() {
+            if (!gameState.running) return;
+            
+            const now = Date.now();
+            const deltaTime = gameState.paused ? 0 : now - lastTime; // 暂停时deltaTime为0
+            lastTime = now;
+            
+            if (!gameState.paused) {
+                gameState.gameTime += deltaTime;
+            }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!gameState.paused) {
+                gameState.player.update(deltaTime);
+            }
+            
+            if (!gameState.paused && now - gameState.lastEnemySpawn > gameState.enemySpawnInterval / difficultySettings[gameState.difficulty].spawnRate) {
+                spawnEnemy();
+                gameState.lastEnemySpawn = now;
+                
+                gameState.enemySpawnInterval = Math.max(300, 1500 - gameState.level * 40);
+            }
+            
+            for (const enemy of gameState.enemies) {
+                enemy.update(deltaTime);
+                
+                const dx = enemy.x - gameState.player.x;
+                const dy = enemy.y - gameState.player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < (enemy.width + gameState.player.width) / 2) {
+                    gameState.player.takeDamage(15);
+                    enemy.takeDamage(15);
+                }
+            }
+            
+            if (gameState.boss) {
+                gameState.boss.update(deltaTime);
+                
+                const dx = gameState.boss.x - gameState.player.x;
+                const dy = gameState.boss.y - gameState.player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < (gameState.boss.width + gameState.player.width) / 2) {
+                    gameState.player.takeDamage(30);
+                }
+            }
+            
+            for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+                const bullet = gameState.bullets[i];
+                
+                if (!gameState.paused) {
+                    bullet.x += bullet.dx * bullet.speed;
+                    bullet.y += bullet.dy * bullet.speed;
+                }
+                
+                if (bullet.x < -bullet.radius || bullet.x > canvas.width + bullet.radius ||
+                    bullet.y < -bullet.radius || bullet.y > canvas.height + bullet.radius) {
+                    gameState.bullets.splice(i, 1);
+                    continue;
+                }
+                
+                if (!bullet.isEnemy) {
+                    for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+                        const enemy = gameState.enemies[j];
+                        const dx = bullet.x - enemy.x;
+                        const dy = bullet.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < (bullet.radius + enemy.width / 2)) {
+                            if (bullet.burnDamage > 0) {
+                                enemy.burning = true;
+                                enemy.burnDamage = bullet.burnDamage;
+                                enemy.burnTime = 2000;
+                            }
+                            
+                            if (bullet.slowEffect < 1) {
+                                enemy.slowEffect = bullet.slowEffect;
+                            }
+                            
+                            let enemyDestroyed = enemy.takeDamage(bullet.damage);
+                            
+                            if (bullet.penetration > 0) {
+                                bullet.penetration--;
+                            } else {
+                                gameState.bullets.splice(i, 1);
+                            }
+                            
+                            if (enemyDestroyed && bullet.explosionRadius) {
+                                createExplosion(bullet.x, bullet.y, bullet.explosionRadius);
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (gameState.boss) {
+                        const dx = bullet.x - gameState.boss.x;
+                        const dy = bullet.y - gameState.boss.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < (bullet.radius + gameState.boss.width / 2)) {
+                            if (gameState.boss.takeDamage(bullet.damage)) {
+                                if (bullet.explosionRadius) {
+                                    createExplosion(bullet.x, bullet.y, bullet.explosionRadius);
+                                }
+                            }
+                            gameState.bullets.splice(i, 1);
+                            continue;
+                        }
+                    }
+                }
+                else if (bullet.isEnemy) {
+                    const dx = bullet.x - gameState.player.x;
+                    const dy = bullet.y - gameState.player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (bullet.radius + gameState.player.width) / 2 && !gameState.player.invulnerable) {
+                        gameState.player.takeDamage(bullet.damage);
+                        gameState.bullets.splice(i, 1);
+                        continue;
+                    }
+                }
+            }
+            
+            for (const powerup of gameState.powerups) {
+                powerup.update();
+            }
+            
+            for (let i = gameState.explosions.length - 1; i >= 0; i--) {
+                const explosion = gameState.explosions[i];
+                const aliveParticles = [];
+                
+                for (const particle of explosion.particles) {
+                    if (!gameState.paused) {
+                        particle.x += particle.dx;
+                        particle.y += particle.dy;
+                    }
+                    particle.life--;
+                    particle.alpha = particle.life / 100;
+                    
+                    if (particle.life > 0) {
+                        aliveParticles.push(particle);
+                    }
+                }
+                
+                if (aliveParticles.length === 0) {
+                    gameState.explosions.splice(i, 1);
+                } else {
+                    explosion.particles = aliveParticles;
+                }
+            }
+            
+            if (!gameState.paused && !gameState.bossActive && gameState.waveEnemies > 0 && 
+                gameState.waveEnemiesKilled >= gameState.waveEnemies && 
+                gameState.enemies.length === 0) {
+                nextLevel();
+            }
+            
+            for (const explosion of gameState.explosions) {
+                drawExplosion(explosion);
+            }
+            
+            for (const powerup of gameState.powerups) {
+                powerup.draw();
+            }
+            
+            for (const bullet of gameState.bullets) {
+                drawBullet(bullet);
+            }
+            
+            for (const enemy of gameState.enemies) {
+                enemy.draw();
+            }
+            
+            if (gameState.boss) {
+                gameState.boss.draw();
+            }
+            
+            gameState.player.draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 绘制子弹
+        function drawBullet(bullet) {
+            ctx.save();
+            
+            ctx.fillStyle = bullet.color;
+            ctx.beginPath();
+            ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if (bullet.speed > 5) {
+                const tailLength = bullet.radius * 3;
+                ctx.strokeStyle = bullet.color;
+                ctx.lineWidth = bullet.radius;
+                ctx.beginPath();
+                ctx.moveTo(bullet.x, bullet.y);
+                ctx.lineTo(bullet.x - bullet.dx * tailLength, bullet.y - bullet.dy * tailLength);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        // 绘制爆炸效果
+        function drawExplosion(explosion) {
+            ctx.save();
+            
+            for (const particle of explosion.particles) {
+                ctx.globalAlpha = particle.alpha;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+
+        // 事件监听
+        window.addEventListener('keydown', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                    gameState.player.keys.w = true;
+                    break;
+                case 'a':
+                    gameState.player.keys.a = true;
+                    break;
+                case 's':
+                    gameState.player.keys.s = true;
+                    break;
+                case 'd':
+                    gameState.player.keys.d = true;
+                    break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                    gameState.player.keys.w = false;
+                    break;
+                case 'a':
+                    gameState.player.keys.a = false;
+                    break;
+                case 's':
+                    gameState.player.keys.s = false;
+                    break;
+                case 'd':
+                    gameState.player.keys.d = false;
+                    break;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const dx = mouseX - gameState.player.x;
+            const dy = mouseY - gameState.player.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            if (length > 0) {
+                gameState.player.direction = {
+                    x: dx / length,
+                    y: dy / length
+                };
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            gameState.player.shoot(mouseX, mouseY);
+        });
+
+        // 触摸控制
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            gameState.player.shoot(touchX, touchY);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!gameState.running || gameState.paused) return;
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+            
+            const dx = touchX - gameState.player.x;
+            const dy = touchY - gameState.player.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            if (length > 0) {
+                gameState.player.direction = {
+                    x: dx / length,
+                    y: dy / length
+                };
+            }
+        });
+
+        // 按钮事件
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', () => {
+            gameState.difficulty = difficultySelectEnd.value;
+            startGame();
+        });
+        
+        // 自动吸取开关
+        autoCollectToggle.addEventListener('click', () => {
+            if (!gameState.running) return;
+            
+            gameState.autoCollect = !gameState.autoCollect;
+            autoCollectToggle.textContent = `自动吸取: ${gameState.autoCollect ? '开' : '关'}`;
+        });
+    </script>
+</body>
+</html>
